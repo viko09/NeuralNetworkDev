@@ -1,4 +1,3 @@
-# Libraries
 import random
 import numpy as np
 
@@ -13,6 +12,7 @@ class Network(object):
     def feedforward(self, a):
         for b, w in zip(self.biases, self.weights):
             a = self.sigmoid(np.dot(w, a) + b)
+            return a
 
     def SGD(self, training_data, epochs, mini_batch_size, eta, test_data=None):
         training_data = list(training_data)
@@ -35,7 +35,7 @@ class Network(object):
 
     def update_mini_batch(self, mini_batch, eta):
         nabla_b = [np.zeros(b.shape) for b in self.biases]
-        nabla_w = [np.zeros(w.shape) for w in self.biases]
+        nabla_w = [np.zeros(w.shape) for w in self.weights]
         for x, y in mini_batch:
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
@@ -58,8 +58,7 @@ class Network(object):
             activation = self.sigmoid(z)
             activations.append(activation)
         # Back pass
-        delta = self.cost_derivative(activations[-1], y) * \
-                self.sigmoid_prime(zs[-1])
+        delta = self.cost_derivative(activations[-1], y) * self.sigmoid_prime(zs[-1])
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
         for l in range(2, self.num_layers):
@@ -78,9 +77,8 @@ class Network(object):
     def cost_derivative(self, output_activations, y):
         return output_activations - y
 
-    def sigmoid(z):
-        return 1.0/(1.0 + np.exp(-z))
+    def sigmoid(self, z):
+        return 1.0 / (1.0 + np.exp(-z))
 
     def sigmoid_prime(self, z):
-        return self.sigmoid(z)*(1-self.sigmoid(z))
-    
+        return self.sigmoid(z) * (1 - self.sigmoid(z))
