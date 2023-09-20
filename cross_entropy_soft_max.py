@@ -9,8 +9,6 @@ class Network(object):
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
         self.weights = [np.random.randn(y, x)
                         for x, y in zip(sizes[:-1], sizes[1:])]
-        # Inicializamos una nueva variable para RMSprop
-        self.square_gradients = [np.zeros(w.shape) for w in self.weights]
 
     def feedforward(self, a):
         for b, w in zip(self.biases, self.weights):
@@ -36,24 +34,17 @@ class Network(object):
             else:
                 print("Epoch {} complete!!".format(j))
 
-    def update_mini_batch(self, mini_batch, eta, rho=0.9, epsilon=1e-8):
+    def update_mini_batch(self, mini_batch, eta):
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
-
         for x, y in mini_batch:
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-
-        # Update weights and biases using RMSprop
-        self.weights = [w - (eta / len(mini_batch)) * nw / (np.sqrt(sw) + epsilon)
-                        for w, nw, sw in zip(self.weights, nabla_w, self.square_gradients)]
-        self.biases = [b - (eta / len(mini_batch)) * nb / (np.sqrt(sb) + epsilon)
-                       for b, nb, sb in zip(self.biases, nabla_b, self.square_gradients)]
-
-        # Update square gradients
-        self.square_gradients = [rho * sg + (1 - rho) * np.square(nw)
-                                 for sg, nw in zip(self.square_gradients, nabla_w)]
+        self.weights = [w - (eta / len(mini_batch)) * nw
+                        for w, nw in zip(self.weights, nabla_w)]
+        self.biases = [b - (eta / len(mini_batch)) * nb
+                       for b, nb in zip(self.biases, nabla_b)]
 
     def backprop(self, x, y):
         nabla_b = [np.zeros(b.shape) for b in self.biases]
@@ -68,7 +59,7 @@ class Network(object):
             activation = self.sigmoid(z)
             activations.append(activation)
         # Backward pass
-        delta = self.cost_derivative(activations[-1], y) * self.sigmoid_prime(zs[-1])
+        delta = activations[-1] - y  # Derivada de la pérdida de entropía cruzada con softmax
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
         for l in range(2, self.num_layers):
@@ -92,11 +83,3 @@ class Network(object):
 
     def sigmoid_prime(self, z):
         return self.sigmoid(z) * (1 - self.sigmoid(z))
-
-# Supongamos que w tiene una forma de (10, 784) y activation tiene una forma de (10, 30)
-
-# Ajusta la forma de activation para que sea (784, tamaño del lote)
-activation = activation.reshape(784, -1)  # -1 indica que NumPy debe inferir automáticamente el tamaño del lote
-
-# Ahora, la multiplicación de matrices debería funcionar correctamente
-z = np.dot(w, activation) + b
